@@ -158,12 +158,9 @@ export default function CooksPage() {
                   className="rounded-2xl p-6 bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg hover:shadow-indigo-900/40 transition"
                 >
                   <h2 className="text-xl font-semibold text-white">
-                    {cook.user?.name || "Unnamed Cook"}
-                  </h2>
-                  <p className="text-white/60">
                     {cook.locationString || "Location hidden"}
-                  </p>
-
+                  </h2>
+                  
                   <p className="text-sm mt-3 text-white/70">
                     🍲 {cook.cuisines.join(", ")}
                   </p>

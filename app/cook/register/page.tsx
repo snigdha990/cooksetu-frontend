@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) throw new Error("API URL not configured")
+if (!API_URL) throw new Error("API URL not configured");
+
 const CUISINE_OPTIONS = [
   "North Indian",
   "South Indian",
@@ -122,18 +124,8 @@ export default function CookPage() {
     e.preventDefault();
     setMessage("");
 
-    if (!form.locationString) {
-      setMessage("City / location is required");
-      return;
-    }
-
-    if (!form.location) {
-      setMessage("Allow location access or enter valid coordinates");
-      return;
-    }
-
-    if (form.cuisines.length === 0) {
-      setMessage("Select at least one cuisine");
+    if (!form.locationString || !form.location || form.cuisines.length === 0) {
+      setMessage("Please fill all required fields");
       return;
     }
 
@@ -144,14 +136,17 @@ export default function CookPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/cooks", {
-        method: myCook ? "PUT" : "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
+      const res = await fetch(
+        myCook ? `${API_URL}/api/cooks/${myCook._id}` : `${API_URL}/api/cooks`,
+        {
+          method: myCook ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(form),
+        }
+      );
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Submission failed");
@@ -168,9 +163,7 @@ export default function CookPage() {
   return (
     <main className="min-h-screen w-full bg-gradient-to-br from-indigo-950 via-purple-950 to-violet-950 px-4 py-24 flex justify-center">
       <div className="w-full max-w-4xl rounded-3xl bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl p-8 text-white">
-        <h1 className="text-2xl font-bold text-center mb-2">
-          Cook Registration
-        </h1>
+        <h1 className="text-2xl font-bold text-center mb-2">Cook Registration</h1>
 
         {requestingLocation && (
           <p className="mb-4 text-center text-indigo-300">
@@ -205,9 +198,7 @@ export default function CookPage() {
             maxLength={10}
             placeholder="Phone Number"
             value={form.phoneNum}
-            onChange={(e) =>
-              setForm({ ...form, phoneNum: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, phoneNum: e.target.value })}
             className="w-full rounded-xl bg-black/30 border border-white/20 px-4 py-2"
           />
 
