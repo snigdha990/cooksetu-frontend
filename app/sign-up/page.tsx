@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -14,14 +14,40 @@ export default function SignupPage() {
     password: "",
     phoneNum: "",
     role: "user" as "user" | "cook",
+    lat: undefined as number | undefined,
+    lng: undefined as number | undefined,
+    locationString: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setForm((prev) => ({
+            ...prev,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            locationString: "Current location",
+          }));
+        },
+        (err) => console.warn("Geolocation denied or unavailable", err)
+      );
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (form.lat === undefined || form.lng === undefined) {
+      setLoading(false);
+      setError("Unable to detect location. Please allow location access.");
+      return;
+    }
 
     const success = await signup(form);
     setLoading(false);
@@ -31,13 +57,9 @@ export default function SignupPage() {
       return;
     }
 
-    if (form.role === "user") {
-      router.push("/enable-location");
-    } else if (form.role === "cook") {
-      router.push("/cook/register");
-    } else {
-      router.push("/");
-    }
+    if (form.role === "user") router.push("/enable-location");
+    else if (form.role === "cook") router.push("/cook/register");
+    else router.push("/");
   };
 
   return (
@@ -55,16 +77,16 @@ export default function SignupPage() {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           {[
-            { label: "Full Name", value: form.name, key: "name", type: "text", placeholder: "Akhil" },
-            { label: "Email", value: form.email, key: "email", type: "email", placeholder: "you@example.com" },
-            { label: "Password", value: form.password, key: "password", type: "password", placeholder: "••••••••" },
-            { label: "Phone Number", value: form.phoneNum, key: "phoneNum", type: "text", placeholder: "+91 98765 43210" },
+            { label: "Full Name", key: "name", type: "text", placeholder: "Akhil" },
+            { label: "Email", key: "email", type: "email", placeholder: "you@example.com" },
+            { label: "Password", key: "password", type: "password", placeholder: "••••••••" },
+            { label: "Phone Number", key: "phoneNum", type: "text", placeholder: "+91 98765 43210" },
           ].map((field) => (
             <div key={field.key}>
               <label className="block text-sm text-white/80 mb-1">{field.label}</label>
               <input
                 type={field.type}
-                value={field.value}
+                value={form[field.key as keyof typeof form] || ""}
                 onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
                 required
                 placeholder={field.placeholder}

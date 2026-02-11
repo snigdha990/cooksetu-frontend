@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -13,16 +13,55 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [locationString, setLocationString] = useState("");
+
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLat(position.coords.latitude);
+          setLng(position.coords.longitude);
+          setLocationString("Current location");
+        },
+        (err) => console.warn("Geolocation denied or unavailable", err)
+      );
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const success = await login(email, password); 
+    const success = await login(email, password);
     setLoading(false);
 
-    if (success) router.push("/"); 
-    else setError("Invalid email or password"); 
+    if (!success) {
+      setError("Invalid email or password");
+      return;
+    }
+
+    if (lat !== null && lng !== null) {
+      try {
+        const token = localStorage.getItem("token");
+        if (token) {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/location`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ lat, lng, locationString }),
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to update location after login", err);
+      }
+    }
+
+    router.push("/"); // redirect after login
   };
 
   return (
