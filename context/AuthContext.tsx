@@ -184,24 +184,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
+      const cleanedEmail = email.trim().toLowerCase();
+      const cleanedPassword = password.trim();
+
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || "Login failed")
-      setUser(data.user)
-      setToken(data.token)
-      localStorage.setItem("token", data.token)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      router.push("/dashboard")
-      return true
-    } catch (err) {
-      console.error("Login error:", err)
-      return false
+        body: JSON.stringify({ email: cleanedEmail, password: cleanedPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        console.error("Login failed:", data.message);
+        throw new Error(data.message || "Login failed");
+      }
+
+      setUser(data.user);
+      setToken(data.token);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      return true;
+    } catch (err: any) {
+      console.error("Login error:", err);
+      return false;
     }
-  }
+  };
 
   const signup = async (data: SignupData) => {
     try {

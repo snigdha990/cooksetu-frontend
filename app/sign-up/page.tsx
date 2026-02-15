@@ -104,7 +104,6 @@ export default function SignupPage() {
             >
               <option value="user">User</option>
               <option value="cook">Cook</option>
-              <option value="admin">Admin</option>
             </select>
           </div>
 
