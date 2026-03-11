@@ -53,25 +53,55 @@ export default function CooksPage() {
   const [cuisine, setCuisine] = useState("");
 
   useEffect(() => {
+    // const fetchCooks = async (lat?: number, lng?: number) => {
+    //   try {
+    //     const url =
+    //       lat !== undefined && lng !== undefined
+    //         ? `${API_URL}/api/cooks/nearby?lat=${lat}&lng=${lng}`
+    //         : `${API_URL}/api/cooks`;
+    //     const res = await fetch(url);
+    //     const data = await res.json();
+    //     const cooksArray: Cook[] = Array.isArray(data) ? data : [];
+    //     const validCooks = cooksArray.filter((c) =>
+    //       lat !== undefined && lng !== undefined ? c.location?.coordinates?.length === 2 : true
+    //     );
+    //     setCooks(validCooks);
+    //   } catch (err) {
+    //     setCooks([]);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+
     const fetchCooks = async (lat?: number, lng?: number) => {
-      try {
-        const url =
-          lat !== undefined && lng !== undefined
-            ? `${API_URL}/api/cooks/nearby?lat=${lat}&lng=${lng}`
-            : `${API_URL}/api/cooks`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const cooksArray: Cook[] = Array.isArray(data) ? data : [];
-        const validCooks = cooksArray.filter((c) =>
-          lat !== undefined && lng !== undefined ? c.location?.coordinates?.length === 2 : true
+    try {
+
+      const allRes = await fetch(`${API_URL}/api/cooks`);
+      const allData = await allRes.json();
+
+      let nearbyData: Cook[] = [];
+
+      if (lat !== undefined && lng !== undefined) {
+        const nearRes = await fetch(
+          `${API_URL}/api/cooks/nearby?lat=${lat}&lng=${lng}`
         );
-        setCooks(validCooks);
-      } catch (err) {
-        setCooks([]);
-      } finally {
-        setLoading(false);
+        nearbyData = await nearRes.json();
       }
-    };
+
+      const map = new Map();
+
+      [...allData, ...nearbyData].forEach((cook: Cook) => {
+        map.set(cook._id, cook);
+      });
+
+      setCooks(Array.from(map.values()));
+
+    } catch (err) {
+      setCooks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
     if (!navigator.geolocation) {
       setLocationAllowed(false);
@@ -137,20 +167,41 @@ export default function CooksPage() {
                   key={cook._id}
                   className="rounded-2xl p-6 bg-white/10 backdrop-blur-xl border border-white/10 shadow-lg hover:shadow-indigo-900/40 transition"
                 >
-                  <h2 className="text-xl font-semibold text-white drop-shadow-md">{cook.user.name}</h2>
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xl font-semibold text-white drop-shadow-md">
+                      {cook.user.name}
+                    </h2>
+                    <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+                      ✔ Verified
+                    </span>
+                  </div>
+
                   <p className="text-sm mt-1 text-white/70">
                     📍 {cook.locationString || "Location hidden"}
                     {cook.distance !== undefined ? ` • ${cook.distance} km away` : ""}
                   </p>
-                  <p className="text-sm mt-3 text-white/70">🍲 {cook.cuisines.join(", ")}</p>
-                  <p className="text-sm mt-1 text-white/70">⭐ {cook.experience} years experience</p>
-                  <p className="text-md font-bold mt-2 text-indigo-400">📞 {cook.phoneNum}</p>
-                  <p className="text-lg font-bold mt-4 text-indigo-300">₹{cook.price}/day</p>
+
+                  <p className="text-sm mt-3 text-white/70">
+                    🍲 {cook.cuisines.join(", ")}
+                  </p>
+
+                  <p className="text-sm mt-1 text-white/70">
+                    ⭐ {cook.experience} years experience
+                  </p>
+
+                  <p className="text-md font-bold mt-2 text-indigo-400">
+                    📞 {cook.phoneNum}
+                  </p>
+
+                  <p className="text-lg font-bold mt-4 text-indigo-300">
+                    ₹{cook.price}/day
+                  </p>
+
                   <button className="mt-5 w-full py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition">
                     View Profile
                   </button>
                 </div>
-              ))}
+    ))}
           {!loading && filtered.length === 0 && (
             <p className="text-center text-white/50 mt-12 col-span-full">No cooks found</p>
           )}

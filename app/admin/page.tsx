@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 type Cook = {
   _id: string;
@@ -21,12 +22,13 @@ type Cook = {
   } | null;
 };
 
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) throw new Error("API URL not configured")
+if (!API_URL) throw new Error("API URL not configured");
 
 export default function AdminCooksPage() {
   const { user, token } = useAuth();
+  const router = useRouter();
+
   const [cooks, setCooks] = useState<Cook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,15 +37,32 @@ export default function AdminCooksPage() {
     if (user?.role === "admin") fetchCooks();
   }, [user, token]);
 
+  const handleUnauthorized = () => {
+    localStorage.removeItem("token"); // remove expired token
+    router.push("/login"); // redirect to login
+  };
+
   const fetchCooks = async () => {
-    if (!token) return;
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
     try {
       setLoading(true);
+
       const res = await fetch(`${API_URL}/api/cooks/admin`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to fetch cooks");
+
       setCooks(data);
     } catch (err: any) {
       setError(err.message);
@@ -53,7 +72,11 @@ export default function AdminCooksPage() {
   };
 
   const updateStatus = async (cookId: string, status: "approved" | "rejected") => {
-    if (!token) return;
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
     try {
       const res = await fetch(`${API_URL}/api/cooks/${cookId}/status`, {
         method: "PATCH",
@@ -63,11 +86,19 @@ export default function AdminCooksPage() {
         },
         body: JSON.stringify({ status }),
       });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to update status");
 
       setCooks((prev) =>
-        prev.map((cook) => (cook._id === cookId ? { ...cook, status: data.status } : cook))
+        prev.map((cook) =>
+          cook._id === cookId ? { ...cook, status: data.status } : cook
+        )
       );
     } catch (err: any) {
       alert(err.message);
@@ -85,7 +116,11 @@ export default function AdminCooksPage() {
         </p>
       </div>
 
-      {error && <div className="mb-6 rounded-lg bg-red-500/20 text-red-300 px-4 py-2 text-sm">{error}</div>}
+      {error && (
+        <div className="mb-6 rounded-lg bg-red-500/20 text-red-300 px-4 py-2 text-sm">
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-white">Loading...</p>
@@ -99,15 +134,19 @@ export default function AdminCooksPage() {
               <h2 className="text-lg font-semibold mb-1">
                 {cook.user?.name || "Unknown User"}
               </h2>
-              <p className="text-sm text-white/70 mb-2">{cook.locationString || "Location not provided"}</p>
+              <p className="text-sm text-white/70 mb-2">
+                {cook.locationString || "Location not provided"}
+              </p>
               <p className="text-sm text-white/70 mb-2">{cook.phoneNum}</p>
 
               <div className="text-sm space-y-1">
                 <p>
-                  <span className="text-white/60">Cuisines:</span> {cook.cuisines.join(", ")}
+                  <span className="text-white/60">Cuisines:</span>{" "}
+                  {cook.cuisines.join(", ")}
                 </p>
                 <p>
-                  <span className="text-white/60">Experience:</span> {cook.experience} yrs
+                  <span className="text-white/60">Experience:</span>{" "}
+                  {cook.experience} yrs
                 </p>
                 <p>
                   <span className="text-white/60">Price:</span> ₹{cook.price}
