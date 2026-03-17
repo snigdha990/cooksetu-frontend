@@ -189,9 +189,7 @@ export default function CooksPage() {
                     ⭐ {cook.experience} years experience
                   </p>
 
-                  <p className="text-md font-bold mt-2 text-indigo-400">
-                    📞 {cook.phoneNum}
-                  </p>
+                  
 
                   <p className="text-lg font-bold mt-4 text-indigo-300">
                     ₹{cook.price}/day
